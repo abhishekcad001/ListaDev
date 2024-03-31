@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Button,
   Card,
@@ -21,30 +21,33 @@ const AddProperty = () => {
   const { t } = useTranslation();
   const token = localStorage.getItem("authToken");
   const [allHomeDetail, setAllHomeDetail] = useState({
-    title: "",
-    description: "",
-    price: "",
-    floor_no: "",
-    address: "",
-    country: "",
-    state: "",
-    city: "",
-    zip: "",
-    size: "",
-    rooms: "",
-    bathrooms: "",
-    garages: "",
-    garage_size: "",
-    basement: "",
-    roofing: "",
+    title: "sas",
+    description: "sasa",
+    price: "32",
+    floor_no: "23",
+    address: "sasas",
+    country: "sasa",
+    state: "sas",
+    city: "sas",
+    zip: "323222",
+    size: "23",
+    rooms: "32",
+    bathrooms: "32",
+    garages: "sdvsv",
+    garage_size: "asdcsdv",
+    basement: "asdv",
+    roofing: "ad",
     available_from: "",
   });
-  const [images, setImages] = useState([]);
-  const [previewURLs, setPreviewURLs] = useState([]);
+  // const [images, setImages] = useState([]);
+  // const [previewURLs, setPreviewURLs] = useState([]);
+  const [selectedImages, setSelectedImages] = useState([]);
+
+  const [selectedImgData, setSelectedImgData] = useState([]);
 
   useEffect(() => {
-    console.log("Updated state", images);
-  }, [allHomeDetail, images]);
+    console.log("Updated state", selectedImages);
+  }, [allHomeDetail, selectedImages]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -54,22 +57,33 @@ const AddProperty = () => {
     });
   };
 
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    setImages([...images, ...files]);
 
-    const imagePreviews = files.map((file) => URL.createObjectURL(file));
-    setPreviewURLs([...previewURLs, ...imagePreviews]);
+  const handleImageChange = (e) => {
+    const files = e.target.files;
+    setSelectedImgData(files)
+    const newSelectedImages = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        newSelectedImages.push(e.target.result);
+        // Check if all files have been processed
+        if (newSelectedImages.length === files.length) {
+          setSelectedImages(newSelectedImages);
+        }
+      };
+
+      reader.readAsDataURL(file);
+    }
   };
   let bed = 4;
-  let interior_details = ['none','non'];
-  let outdoor_details = ['none','non'];
-  let utilities = ['none','non'];
-  let other_features = ['none','non'];
   const handleSubmit = async () => {
-    const formData = new FormData();
-
-
+    let formData = new FormData();
+    [...selectedImgData].forEach((file) => {
+      formData.append(`photos`, file);
+    });
     formData.append("title", allHomeDetail.title);
     formData.append("description", allHomeDetail.description);
     formData.append("price", allHomeDetail.price);
@@ -88,30 +102,21 @@ const AddProperty = () => {
     formData.append("roofing", allHomeDetail.roofing);
     formData.append("floor_no", allHomeDetail.floor_no);
     formData.append("available_from", allHomeDetail.available_from);
-    formData.append("interior_details", interior_details);
-    formData.append("outdoor_details", outdoor_details);
-    formData.append("utilities", utilities);
-    formData.append("other_features",other_features);
 
-
-    // Append images to the FormData object
-    images.forEach((image, index) => {
-      formData.append(`photo_${index}`, image);
-    });
-
-    // Make the POST request with the FormData object
     try {
-      
-      const response = await axios.post("http://localhost:5000/api/admin/addHome", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data", 
-        },
-      });
-      notifySuccess("created")
+      const response = await axios.post(
+        "http://localhost:5000/api/admin/addHome",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      notifySuccess("created");
     } catch (error) {
       console.error("Error:", error);
-      
     }
   };
 
@@ -145,17 +150,21 @@ const AddProperty = () => {
               <label htmlFor="photos" className="mb-2 lableClass  flex">
                 Photos
               </label>
-              <input onChange={handleImageChange} id="photos" name="photos" type="file" />
+              <input
+                onChange={handleImageChange}
+                // ref={inputFileRef}
+                id="photos"
+                name="photos"
+                type="file"
+                // className="hidden"
+                multiple
+              />
               <br />
               <div className=" flex">
-                {previewURLs.map((previewURL, index) => (
-                  <img
-                    key={index}
-                    src={previewURL}
-                    alt={`Preview ${index}`}
-                    className="mr-2 mb-2"
-                    style={{ maxWidth: "70px" }}
-                  />
+
+                {selectedImages.map((image, index) => (
+                  <img key={index} src={image} alt={`Selected Image ${index}`} className="mr-2 mb-2"
+                    style={{ maxWidth: "70px" }} />
                 ))}
               </div>
             </div>
@@ -164,6 +173,7 @@ const AddProperty = () => {
                 Title
               </label>
               <input
+                value={allHomeDetail.title}
                 onChange={(e) => handleInputChange(e)}
                 id="title"
                 name="title"
@@ -177,6 +187,7 @@ const AddProperty = () => {
                 Description
               </label>
               <input
+                value={allHomeDetail.description}
                 onChange={(e) => handleInputChange(e)}
                 id="description"
                 name="description"
@@ -190,6 +201,7 @@ const AddProperty = () => {
                 Price
               </label>
               <input
+                value={allHomeDetail.price}
                 onChange={(e) => handleInputChange(e)}
                 id="price"
                 name="price"
@@ -203,6 +215,7 @@ const AddProperty = () => {
                 Floor No
               </label>
               <input
+                value={allHomeDetail.floor_no}
                 onChange={(e) => handleInputChange(e)}
                 id="floor_no"
                 name="floor_no"
@@ -216,6 +229,7 @@ const AddProperty = () => {
                 Address
               </label>
               <input
+                value={allHomeDetail.address}
                 onChange={(e) => handleInputChange(e)}
                 id="address"
                 name="address"
@@ -229,6 +243,7 @@ const AddProperty = () => {
                 Country
               </label>
               <input
+                value={allHomeDetail.country}
                 onChange={(e) => handleInputChange(e)}
                 id="country"
                 name="country"
@@ -242,6 +257,7 @@ const AddProperty = () => {
                 State
               </label>
               <input
+                value={allHomeDetail.state}
                 onChange={(e) => handleInputChange(e)}
                 id="state"
                 name="state"
@@ -255,6 +271,7 @@ const AddProperty = () => {
                 City
               </label>
               <input
+                value={allHomeDetail.city}
                 onChange={(e) => handleInputChange(e)}
                 id="city"
                 name="city"
@@ -268,6 +285,7 @@ const AddProperty = () => {
                 ZIP
               </label>
               <input
+                value={allHomeDetail.zip}
                 onChange={(e) => handleInputChange(e)}
                 id="zip"
                 name="zip"
@@ -281,6 +299,7 @@ const AddProperty = () => {
                 Size
               </label>
               <input
+                value={allHomeDetail.size}
                 onChange={(e) => handleInputChange(e)}
                 id="size"
                 name="size"
@@ -294,6 +313,7 @@ const AddProperty = () => {
                 Rooms
               </label>
               <input
+                value={allHomeDetail.rooms}
                 onChange={(e) => handleInputChange(e)}
                 id="rooms"
                 name="rooms"
@@ -307,6 +327,7 @@ const AddProperty = () => {
                 Bathrooms
               </label>
               <input
+                value={allHomeDetail.bathrooms}
                 onChange={(e) => handleInputChange(e)}
                 id="bathrooms"
                 name="bathrooms"
@@ -320,6 +341,7 @@ const AddProperty = () => {
                 Garages
               </label>
               <input
+                value={allHomeDetail.garages}
                 onChange={(e) => handleInputChange(e)}
                 id="garages"
                 name="garages"
@@ -333,6 +355,7 @@ const AddProperty = () => {
                 Garage Size
               </label>
               <input
+                value={allHomeDetail.garage_size}
                 onChange={(e) => handleInputChange(e)}
                 id="garage_size"
                 name="garage_size"
@@ -346,6 +369,7 @@ const AddProperty = () => {
                 Basement (Yes / No)
               </label>
               <input
+                value={allHomeDetail.basement}
                 onChange={(e) => handleInputChange(e)}
                 id="basement"
                 name="basement"
@@ -359,6 +383,7 @@ const AddProperty = () => {
                 Roofing (Yes / No)
               </label>
               <input
+                value={allHomeDetail.roofing}
                 onChange={(e) => handleInputChange(e)}
                 id="roofing"
                 name="roofing"
@@ -372,6 +397,7 @@ const AddProperty = () => {
                 Available From
               </label>
               <input
+                value={allHomeDetail.available_from}
                 onChange={(e) => handleInputChange(e)}
                 id="available_from"
                 name="available_from"
